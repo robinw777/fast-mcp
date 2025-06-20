@@ -2,6 +2,8 @@
 
 require 'dry-schema'
 
+Dry::Schema.load_extensions(:json_schema)
+
 # Extend Dry::Schema macros to support description
 module Dry
   module Schema
@@ -122,7 +124,7 @@ module FastMcp
         return nil unless @input_schema
 
         compiler = SchemaCompiler.new
-        compiler.process(@input_schema)
+        compiler.process(@input_schema, customized: true)
       end
     end
 
@@ -635,7 +637,7 @@ module FastMcp
 
     attr_reader :json_schema
 
-    def process(schema)
+    def process(schema, customized: false)
       # Reset schema for each process call
       @json_schema = {
         type: 'object',
@@ -649,13 +651,25 @@ module FastMcp
       # Extract metadata from the schema
       @metadata = extract_metadata_from_schema(schema)
 
-      # Process each rule in the schema
-      schema.rules.each do |key, rule|
-        process_rule(key, rule)
-      end
+      if customized
+        # PIO specific schema processing
+        @json_schema = schema.json_schema
+        @json_schema.delete(:$schema)
 
-      # Remove empty required array
-      @json_schema.delete(:required) if @json_schema[:required].empty?
+        schema.rules.each do |key, rule|
+          @json_schema[:properties].delete(key) if @metadata.dig(key.to_s, :hidden)
+          description = @metadata.dig(key.to_s, :description)
+          @json_schema[:properties][key][:description] = description if description.present?
+        end
+      else
+        # Process each rule in the schema
+        schema.rules.each do |key, rule|
+          process_rule(key, rule)
+        end
+
+        # Remove empty required array
+        @json_schema.delete(:required) if @json_schema[:required].empty?
+      end
 
       @json_schema
     end
