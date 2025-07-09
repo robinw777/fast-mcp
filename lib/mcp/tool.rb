@@ -1,92 +1,7 @@
 # frozen_string_literal: true
 
 require 'dry-schema'
-
-Dry::Schema.load_extensions(:json_schema)
-
-# Extend Dry::Schema macros to support description
-module Dry
-  module Schema
-    module Macros
-      # Add description method to Value macro
-      class Value
-        def description(text)
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :description, text)
-
-          self
-        end
-
-        def hidden(hidden = true) # rubocop:disable Style/OptionalBooleanParameter
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :hidden, hidden)
-
-          self
-        end
-      end
-
-      # Add description method to Required macro
-      class Required
-        def description(text)
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :description, text)
-
-          self
-        end
-
-        def hidden(hidden = true) # rubocop:disable Style/OptionalBooleanParameter
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :hidden, hidden)
-
-          self
-        end
-      end
-
-      # Add description method to Optional macro
-      class Optional
-        def description(text)
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :description, text)
-
-          self
-        end
-
-        def hidden(hidden = true) # rubocop:disable Style/OptionalBooleanParameter
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :hidden, hidden)
-
-          self
-        end
-      end
-
-      # Add description method to Hash macro
-      class Hash
-        def description(text)
-          key_name = name.to_sym
-          schema_dsl.meta(key_name, :description, text)
-          self
-        end
-      end
-    end
-  end
-end
-
-# Extend Dry::Schema DSL to store metadata
-module Dry
-  module Schema
-    class DSL
-      def meta(key_name, meta_key, value)
-        @meta ||= {}
-        @meta[key_name] ||= {}
-        @meta[key_name][meta_key] = value
-      end
-
-      def meta_data
-        @meta || {}
-      end
-    end
-  end
-end
+require_relative 'json_schema_compiler'
 
 module FastMcp
   # Main Tool class that represents an MCP Tool
@@ -123,8 +38,7 @@ module FastMcp
       def input_schema_to_json
         return nil unless @input_schema
 
-        compiler = SchemaCompiler.new
-        compiler.process(@input_schema, customized: true)
+        JSONSchemaCompiler.process(@input_schema)
       end
     end
 
